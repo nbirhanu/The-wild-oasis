@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { useState } from "react";
 import { cloneElement } from "react";
 import { createContext } from "react";
@@ -70,27 +70,44 @@ const Modal = function ({ children }) {
 };
 
 //child function
-const Opens = function ({ children, opens: openWindowNmae }) {
+const Open = function ({ children, opens: openWindowNmae }) {
   const { open } = useContext(ModalContext);
   return cloneElement(children, { onClick: () => open(openWindowNmae) });
 };
 
 //child function
 
-function Window({ children, onClose }) {
+function Window({ children, name }) {
+  const { close, openName } = useContext(ModalContext);
+  const ref = useRef();
+  //
+  useEffect(
+    function () {
+      function handleClick(e) {
+        if (ref.current && !ref.current.contains(e.target)) {
+          console.log("click outside");
+          close();
+        }
+      }
+      document.addEventListener("click", handleClick, true);
+      return () => document.removeEventListener("click", handleClick, true);
+    },
+    [close],
+  );
+  if (name !== openName) return null;
   return createPortal(
     <Overlay>
-      <StyledModal>
-        <Button onClick={onClose}>
+      <StyledModal ref={ref}>
+        <Button onClick={close}>
           <HiXMark />
         </Button>
-        <div>{children}</div>
+        <div>{cloneElement(children, { onCloseModal: close })}</div>
       </StyledModal>
     </Overlay>,
     document.body,
   );
 }
 //
-Window.Opens = Opens;
-Window.Window = Window;
+Modal.Open = Open;
+Modal.Window = Window;
 export default Modal;
